@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Repeated Addition Dino</title>
+    <title>Dino Math: 2-Step Edition</title>
     <style>
         :root {
             --primary: #673AB7; /* Deep Purple */
             --accent: #FFEB3B; /* Yellow */
-            --text: #333;
+            --highlight: #FF5722; /* Orange for circles */
             --bg: #F3E5F5;
         }
         
@@ -27,10 +27,10 @@
         /* --- Header --- */
         .header {
             background: white;
-            padding: 10px 20px;
-            border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            margin-bottom: 10px;
+            padding: 12px 25px;
+            border-radius: 25px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
             display: flex;
             gap: 15px;
             align-items: center;
@@ -38,10 +38,12 @@
         }
 
         select {
-            padding: 8px;
+            padding: 8px 12px;
             font-size: 1.1rem;
             border-radius: 8px;
             border: 2px solid var(--primary);
+            font-weight: bold;
+            color: var(--primary);
         }
 
         /* --- Main Visualization Area --- */
@@ -53,30 +55,36 @@
             border-radius: 20px;
             padding: 20px;
             box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
-            overflow-y: auto; /* Scroll vertical if many rows */
-            overflow-x: auto; /* Scroll horizontal if many cols */
+            overflow-y: auto;
+            overflow-x: auto;
             display: flex;
             flex-direction: column;
-            align-items: flex-start; /* Align left so columns grow right */
+            align-items: flex-start;
             position: relative;
         }
 
-        /* --- The Row (Group) --- */
+        /* --- The Group (Row) Bubbles --- */
         .math-row {
             display: flex;
             align-items: center;
-            margin-bottom: 5px;
-            padding: 5px;
+            margin-bottom: 10px;
+            padding: 10px 20px;
             background: #fff;
-            border-radius: 10px;
-            transition: all 0.3s;
+            
+            /* The Circle/Bubble Style */
+            border: 3px solid var(--highlight); 
+            border-radius: 50px; 
+            
             white-space: nowrap;
+            transition: all 0.3s;
+            box-shadow: 2px 2px 0 rgba(0,0,0,0.05);
         }
 
         .dino-icon {
             font-size: 2rem;
             display: inline-block;
-            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            margin: 0 2px;
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         
         @keyframes popIn {
@@ -84,11 +92,20 @@
             to { transform: scale(1); }
         }
 
+        /* The math text inside the row (= 2) */
         .row-equals {
             font-size: 1.5rem;
             color: #888;
-            margin-left: 15px;
+            margin-left: 20px;
             font-weight: bold;
+            opacity: 0; /* Hidden initially */
+            transform: translateX(-10px);
+            transition: all 0.5s ease;
+        }
+        
+        .row-equals.visible {
+            opacity: 1;
+            transform: translateX(0);
         }
 
         /* --- The Plus Sign Between Rows --- */
@@ -96,22 +113,34 @@
             font-size: 2rem;
             color: var(--primary);
             font-weight: bold;
-            margin-left: 20px; /* Align somewhat with dinos */
-            line-height: 0.8;
-            height: 30px;
+            margin-left: 30px; 
+            line-height: 0.5;
+            height: 20px;
+            opacity: 0; /* Hidden initially */
+            transition: opacity 0.5s;
+        }
+        
+        .plus-separator.visible {
+            opacity: 1;
         }
         
         /* --- Total Calculation --- */
         .total-line {
             border-top: 3px solid #333;
-            width: 100%;
-            margin-top: 10px;
+            width: 90%;
+            margin-top: 15px;
             padding-top: 10px;
             font-size: 2rem;
             color: var(--primary);
             font-weight: bold;
             text-align: left;
             padding-left: 20px;
+            opacity: 0; /* Hidden initially */
+            transition: opacity 0.5s;
+        }
+        
+        .total-line.visible {
+            opacity: 1;
         }
 
         /* --- Number Line (Footer) --- */
@@ -120,15 +149,16 @@
             max-width: 800px;
             margin-top: 10px;
             background: white;
-            border-radius: 15px;
+            border-radius: 20px 20px 0 0;
             padding: 10px 20px;
             position: relative;
             flex-shrink: 0;
+            border-top: 4px solid var(--primary);
         }
 
         .number-line-scroll {
             overflow-x: auto;
-            padding-top: 40px; /* Space for flying dino */
+            padding-top: 50px; /* Space for flying dino */
             padding-bottom: 20px;
         }
 
@@ -136,7 +166,6 @@
             position: relative;
             height: 3px;
             background: #333;
-            /* Width set by JS */
         }
 
         .tick {
@@ -149,17 +178,23 @@
         
         .tick-label {
             position: absolute;
-            bottom: -20px;
+            bottom: -25px;
             transform: translateX(-50%);
             font-size: 0.8rem;
             color: #666;
+        }
+        
+        .tick-label.highlight {
+            color: var(--primary);
+            font-weight: bold;
+            font-size: 1.1rem;
         }
 
         /* --- Flying Dino --- */
         #flyingDino {
             position: absolute;
             top: -45px;
-            left: -10px;
+            left: -10px; /* Aligned with 0 */
             font-size: 2.5rem;
             transition: left 1s ease-in-out;
             z-index: 50;
@@ -171,7 +206,7 @@
 
         @keyframes flyArc {
             0% { transform: translateY(0) rotate(0deg); }
-            50% { transform: translateY(-50px) rotate(-10deg); }
+            50% { transform: translateY(-60px) rotate(-15deg); }
             100% { transform: translateY(0) rotate(0deg); }
         }
 
@@ -180,29 +215,37 @@
             background: var(--primary);
             color: white;
             border: none;
-            padding: 10px 25px;
-            border-radius: 20px;
-            font-size: 1.2rem;
+            padding: 12px 30px;
+            border-radius: 30px;
+            font-size: 1.3rem;
             font-weight: bold;
             cursor: pointer;
             box-shadow: 0 4px 0 #4527A0;
-            margin-left: 20px;
+            transition: transform 0.1s;
         }
         #nextBtn:active { transform: translateY(4px); box-shadow: none; }
+        
+        /* Secondary color for the calculation step */
+        #nextBtn.calc-mode {
+            background: var(--highlight);
+            box-shadow: 0 4px 0 #E64A19;
+        }
 
     </style>
 </head>
 <body>
 
     <div class="header">
-        <label>I want <b>Rows</b> of:</label>
+        <label>Times Table of:</label>
         <select id="tableSelect" onchange="resetGame()">
             </select>
-        <button id="nextBtn" onclick="nextStep()">Start</button>
+        <button id="nextBtn" onclick="handleGameStep()">Start</button>
     </div>
 
     <div class="math-container" id="mathArea">
-        <div style="color: #999; font-style: italic;">Select a number and click Start!</div>
+        <div style="color: #999; font-style: italic; padding: 20px;">
+            Select a number to begin...
+        </div>
     </div>
 
     <div class="footer">
@@ -215,10 +258,16 @@
 
     <script>
         // --- Game State ---
-        let numRows = 4;        // "Table of 4" = 4 Rows
-        let numCols = 0;        // Multiplier (starts at 0)
-        let maxCols = 10; 
-        const tickSpacing = 35; // Pixels between numbers
+        let tableNum = 4;       // The Table Number (Rows)
+        let multiplier = 0;     // The Column Count
+        let maxMultiplier = 10; 
+        
+        // "phase" handles the 2-step process
+        // 'SHOW_DINO' = User clicked Next -> Show images. Math is hidden.
+        // 'SHOW_MATH' = User clicked Calculate -> Reveal math & Fly dino.
+        let phase = 'SHOW_MATH'; // Start here so first click triggers SHOW_DINO
+
+        const tickSpacing = 35; // Pixels per unit
 
         // --- DOM ---
         const mathArea = document.getElementById('mathArea');
@@ -239,140 +288,163 @@
         }
 
         function resetGame() {
-            numRows = parseInt(select.value);
-            numCols = 0;
+            tableNum = parseInt(select.value);
+            multiplier = 0;
+            phase = 'SHOW_MATH'; // Ready to start first round
             
             // Clear Visuals
-            mathArea.innerHTML = '<div style="color: #888;">Ready to multiply...</div>';
-            btn.innerText = "Start (x1)";
-            btn.onclick = nextStep;
+            mathArea.innerHTML = '<div style="color: #888; padding:20px;">Ready! Click Start.</div>';
+            btn.innerText = "Show Dinos (x1)";
+            btn.className = ""; 
+            btn.onclick = handleGameStep;
             
-            // Setup Number Line (Length = Rows * 10)
+            // Setup Number Line (Length = Table * 10)
             drawNumberLine();
-            moveDino(0);
+            moveDino(0, false);
         }
 
         function drawNumberLine() {
-            let maxVal = numRows * 10; 
-            let width = maxVal * tickSpacing + 50; // extra padding
+            let maxVal = tableNum * 10; 
+            let width = maxVal * tickSpacing + 100; // padding
             numLine.style.width = width + 'px';
             
-            // Rebuild innerHTML but keep dino
+            // Rebuild innerHTML but keep dino logic
             numLine.innerHTML = '<div id="flyingDino">🦖</div>';
             
+            // Draw ticks 0 to maxVal
             for(let i=0; i<=maxVal; i++) {
                 let tick = document.createElement('div');
                 tick.className = 'tick';
                 tick.style.left = (i * tickSpacing) + 'px';
                 
-                // Show numbers every 1 step (User requested standard view)
-                // But if the line is huge, maybe every 5? Let's stick to every 1 for clarity < 50
-                if(true) { 
-                    let label = document.createElement('div');
-                    label.className = 'tick-label';
-                    label.innerText = i;
-                    label.style.left = (i * tickSpacing) + 'px';
-                    numLine.appendChild(label);
-                }
+                // Show label every 1 step for clarity
+                let label = document.createElement('div');
+                label.className = 'tick-label';
+                label.innerText = i;
+                label.id = `label-${i}`;
+                label.style.left = (i * tickSpacing) + 'px';
+                numLine.appendChild(label);
                 
                 numLine.appendChild(tick);
             }
         }
 
-        function nextStep() {
-            if(numCols >= maxCols) {
-                // Reset Prompt
-                if(confirm("Great job! Do you want to try another number?")) {
-                    resetGame();
+        function handleGameStep() {
+            if(phase === 'SHOW_MATH') {
+                // STEP 1: SHOW THE IMAGES (Hidden Math)
+                if(multiplier >= maxMultiplier) {
+                    if(confirm("Done! Reset?")) resetGame();
+                    return;
                 }
-                return;
-            }
 
-            // Increase Columns
-            numCols++; 
-            renderGrid();
-            
-            // Animate Dino to Total
-            let total = numRows * numCols;
-            moveDino(total);
-            
-            // Update Button Text
-            if(numCols < maxCols) {
-                btn.innerText = `Next (x${numCols + 1})`;
+                multiplier++; 
+                renderGrid(false); // false = math hidden
+                
+                // Update State to wait for next click
+                phase = 'SHOW_DINO';
+                btn.innerText = "Show Sum & Fly!";
+                btn.className = "calc-mode"; // Orange button
+                
+                // Scroll to bottom to see new row
+                mathArea.scrollTop = mathArea.scrollHeight;
+
             } else {
-                btn.innerText = "Done!";
+                // STEP 2: REVEAL MATH & FLY DINO
+                revealMath();
+                
+                // Animate Dino
+                let total = tableNum * multiplier;
+                moveDino(total, true);
+                
+                // Highlight number on line
+                document.getElementById(`label-${total}`).classList.add('highlight');
+
+                // Prepare for next round
+                phase = 'SHOW_MATH';
+                if(multiplier < maxMultiplier) {
+                    btn.innerText = `Next (x${multiplier + 1})`;
+                } else {
+                    btn.innerText = "Finish";
+                }
+                btn.className = ""; // Back to purple
             }
         }
 
-        function renderGrid() {
-            mathArea.innerHTML = ''; // Rebuild grid (easier than appending for this logic)
+        function renderGrid(showMath) {
+            mathArea.innerHTML = ''; 
 
-            // We need 'numRows' rows
-            // Each row has 'numCols' dinos
-            
-            for(let r = 0; r < numRows; r++) {
-                // 1. The Row
+            // Loop Rows (Table Number)
+            for(let r = 0; r < tableNum; r++) {
+                
+                // 1. The Row Bubble
                 let rowDiv = document.createElement('div');
                 rowDiv.className = 'math-row';
                 
                 // Add Dinos (Columns)
-                for(let c = 0; c < numCols; c++) {
+                for(let c = 0; c < multiplier; c++) {
                     let dino = document.createElement('span');
                     dino.className = 'dino-icon';
                     dino.innerText = '🦖';
                     rowDiv.appendChild(dino);
                 }
                 
-                // Add "= Count" at end of row
+                // Add "= Count" (Initially hidden if !showMath)
                 let equals = document.createElement('span');
-                equals.className = 'row-equals';
-                equals.innerText = `= ${numCols}`;
+                equals.className = 'row-equals ' + (showMath ? 'visible' : '');
+                equals.innerText = `= ${multiplier}`;
                 rowDiv.appendChild(equals);
                 
                 mathArea.appendChild(rowDiv);
 
-                // 2. The Plus Sign (if not the last row)
-                if(r < numRows - 1) {
+                // 2. The Plus Sign (Between rows)
+                if(r < tableNum - 1) {
                     let plusDiv = document.createElement('div');
-                    plusDiv.className = 'plus-separator';
+                    plusDiv.className = 'plus-separator ' + (showMath ? 'visible' : '');
                     plusDiv.innerText = '+';
                     mathArea.appendChild(plusDiv);
                 }
             }
 
-            // 3. The Grand Total
+            // 3. The Grand Total (Initially hidden)
             let totalDiv = document.createElement('div');
-            totalDiv.className = 'total-line';
-            totalDiv.innerText = `Total = ${numRows * numCols}`;
+            totalDiv.className = 'total-line ' + (showMath ? 'visible' : '');
+            totalDiv.innerText = `Total: ${tableNum * multiplier}`;
             mathArea.appendChild(totalDiv);
             
-            // Auto scroll math area to see bottom if tall
+            // Auto scroll
             mathArea.scrollTop = mathArea.scrollHeight;
         }
 
-        function moveDino(targetVal) {
+        function revealMath() {
+            // Find all hidden elements and add 'visible' class
+            document.querySelectorAll('.row-equals').forEach(el => el.classList.add('visible'));
+            document.querySelectorAll('.plus-separator').forEach(el => el.classList.add('visible'));
+            document.querySelectorAll('.total-line').forEach(el => el.classList.add('visible'));
+        }
+
+        function moveDino(targetVal, animate) {
             const d = document.getElementById('flyingDino');
-            // Calculate pixel position
             let px = targetVal * tickSpacing;
             
-            // Apply move
-            d.style.left = (px - 15) + 'px'; // -15 to center dino
+            d.style.left = (px - 15) + 'px'; 
             
-            // Apply animation class
-            d.classList.remove('flying');
-            void d.offsetWidth; // Trigger reflow
-            d.classList.add('flying');
+            if(animate) {
+                d.classList.remove('flying');
+                void d.offsetWidth; 
+                d.classList.add('flying');
+            }
             
-            // Scroll container if dino goes off screen
+            // Scroll container
             let containerCenter = scrollContainer.clientWidth / 2;
+            let targetScroll = px - containerCenter;
             scrollContainer.scrollTo({
-                left: px - containerCenter,
+                left: targetScroll,
                 behavior: 'smooth'
             });
         }
 
-        // Start fresh
-        resetGame();
+        // Init
+        window.onload = resetGame;
 
     </script>
 </body>
