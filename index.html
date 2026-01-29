@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dino Skip Counting</title>
+    <style>
+        :root {
+            --primary: #2196F3; /* Blue for logic/math */
+            --accent: #FFC107;
+            --bg: #f4f4f9;
+        }
+        
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* --- Header --- */
+        .controls {
+            background: white;
+            padding: 15px 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            z-index: 10;
+        }
+
+        select {
+            padding: 8px;
+            font-size: 1.1rem;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+        }
+
+        /* --- Game Container --- */
+        .game-area {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 800px; /* Wider for columns */
+            flex-grow: 1;
+            gap: 15px;
+            overflow: hidden; 
+        }
+
+        /* --- Dino Grid (Scrollable) --- */
+        .grid-wrapper {
+            background: white;
+            border-radius: 12px;
+            border: 2px solid #e0e0e0;
+            flex-grow: 1;
+            position: relative;
+            overflow: auto; /* Scroll both ways if needed */
+        }
+
+        .grid-container {
+            padding: 20px;
+            display: grid;
+            /* Key change: Fill columns first! */
+            grid-auto-flow: column; 
+            gap: 10px;
+            justify-content: start;
+            align-content: start;
+            /* We ensure the grid cells don't shrink */
+            min-width: min-content; 
+        }
+
+        .dino-cell {
+            width: 50px;
+            height: 50px;
+            background: #e3f2fd;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Bouncy transition */
+            opacity: 1;
+        }
+
+        .dino-cell.cancelled {
+            background: #ffebee;
+            opacity: 0.2;
+            transform: scale(0.5);
+            filter: grayscale(100%);
+        }
+
+        /* Labels for the columns (1, 2, 3...) */
+        .col-label {
+            text-align: center;
+            font-weight: bold;
+            color: #999;
+            margin-bottom: 5px;
+        }
+
+        /* --- Info Bar --- */
+        .info-bar {
+            text-align: center;
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        /* --- Number Line --- */
+        .number-line-container {
+            background: white;
+            padding: 30px 20px 20px 20px;
+            border-radius: 12px;
+            overflow-x: auto;
+            white-space: nowrap;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        }
+
+        .number-line {
+            display: flex;
+            gap: 0; /* Continuous line */
+            min-width: min-content;
+        }
+
+        .num-segment {
+            height: 40px;
+            border-bottom: 3px solid #ddd;
+            position: relative;
+            flex-shrink: 0;
+            transition: border-color 0.5s;
+            display: flex;
+            align-items: flex-end;
+            justify-content: flex-end;
+        }
+
+        .num-segment.highlight {
+            border-bottom: 3px solid var(--primary);
+        }
+
+        .tick-label {
+            position: absolute;
+            bottom: -30px;
+            right: -10px; /* Center over the tick mark */
+            width: 20px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #999;
+        }
+
+        .tick-label.major {
+            color: #333;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
+        /* The jumping marker */
+        .frog-marker {
+            position: absolute;
+            bottom: 5px;
+            right: -10px;
+            font-size: 1.5rem;
+            transition: left 0.5s ease;
+            opacity: 0;
+        }
+        .num-segment.highlight .frog-marker {
+            opacity: 1; 
+        }
+
+        /* --- Action Button --- */
+        #actionBtn {
+            width: 100%;
+            max-width: 800px;
+            padding: 18px;
+            font-size: 1.3rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 4px 0 #1976D2;
+            transition: all 0.1s;
+        }
+
+        #actionBtn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #1976D2;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="controls">
+        <label>Times Table of:</label>
+        <select id="tableSelect"></select>
+        <button onclick="initGame()" style="padding: 8px 16px;">Reset</button>
+    </div>
+
+    <div class="game-area">
+        <div class="grid-wrapper">
+            <div class="grid-container" id="grid"></div>
+        </div>
+
+        <div class="info-bar" id="equationDisplay">Select a table to start!</div>
+
+        <div class="number-line-container">
+            <div class="number-line" id="numberLine"></div>
+        </div>
+    </div>
+
+    <button id="actionBtn" onclick="handleInteraction()">Start Game</button>
+
+    <script>
+        // --- State ---
+        let tableNum = 3;       // The "Row" count (Table of 3)
+        let multiplier = 4;     // The "Column" count
+        let groupsCancelled = 0; 
+        let isAnimating = false;
+
+        // --- DOM ---
+        const grid = document.getElementById('grid');
+        const eqDisplay = document.getElementById('equationDisplay');
+        const numLine = document.getElementById('numberLine');
+        const btn = document.getElementById('actionBtn');
+        const select = document.getElementById('tableSelect');
+
+        // --- Setup ---
+        // Populate Dropdown 0-20
+        for(let i=1; i<=20; i++) {
+            let opt = document.createElement('option');
+            opt.value = i;
+            opt.innerText = i;
+            if(i===5) opt.selected = true; // Default to 5 as per prompt
+            select.appendChild(opt);
+        }
+
+        function initGame() {
+            tableNum = parseInt(select.value);
+            // We start with "Table x 1"
+            multiplier = 1;
+            groupsCancelled = 0;
+            renderRound();
+        }
+
+        function renderRound() {
+            groupsCancelled = 0;
+            const total = tableNum * multiplier;
+            
+            // 1. Update Equation
+            eqDisplay.innerText = `${tableNum} x ${multiplier} = ?`;
+            btn.innerText = "Skip Count (Next Group)";
+            
+            // 2. Build Grid
+            // We use GRID-AUTO-FLOW: COLUMN.
+            // We set Rows = tableNum.
+            // This ensures every "column" in the visual grid is exactly the size of the Table Number.
+            grid.innerHTML = '';
+            grid.style.gridTemplateRows = `repeat(${tableNum}, 50px)`;
+            grid.style.gridTemplateColumns = `repeat(${multiplier}, 50px)`;
+
+            for(let i=0; i<total; i++) {
+                let cell = document.createElement('div');
+                cell.className = 'dino-cell';
+                cell.innerText = '🦖';
+                // We add a data attribute to know which column this dino belongs to
+                // Since flow is column-major: Math.floor(i / tableNum) gives column index
+                cell.dataset.col = Math.floor(i / tableNum);
+                grid.appendChild(cell);
+            }
+
+            // 3. Build Number Line
+            // Needs to be long enough for the total
+            renderNumberLine(total);
+        }
+
+        function renderNumberLine(maxVal) {
+            numLine.innerHTML = '';
+            // We draw segments. 1 segment = 1 unit width.
+            // We will scale width so it fits nicely.
+            const segmentWidth = 40; // px
+            
+            for(let i=1; i<=maxVal; i++) {
+                let seg = document.createElement('div');
+                seg.className = 'num-segment';
+                seg.style.width = segmentWidth + 'px';
+                seg.id = `seg-${i}`;
+
+                // Add label
+                let label = document.createElement('div');
+                label.className = 'tick-label';
+                label.innerText = i;
+                
+                // Highlight multiples of tableNum
+                if (i % tableNum === 0 || i === 0) {
+                    label.classList.add('major');
+                } else {
+                    label.style.fontSize = '0.7rem';
+                    label.style.opacity = '0.5';
+                }
+
+                seg.appendChild(label);
+                numLine.appendChild(seg);
+            }
+        }
+
+        function handleInteraction() {
+            const totalDinos = tableNum * multiplier;
+
+            // If we finished the current table (e.g., 5*1), move to next (5*2)
+            if (groupsCancelled >= multiplier) {
+                multiplier++;
+                renderRound();
+                return;
+            }
+
+            // --- ANIMATION STEP ---
+            // 1. Cancel the specific column (group)
+            const dinosaurs = document.querySelectorAll('.dino-cell');
+            dinosaurs.forEach(dino => {
+                if(parseInt(dino.dataset.col) === groupsCancelled) {
+                    dino.classList.add('cancelled');
+                }
+            });
+
+            // 2. Update Number Line (Highlight the range)
+            const startNum = (groupsCancelled * tableNum) + 1;
+            const endNum = (groupsCancelled + 1) * tableNum;
+            
+            for(let i=startNum; i<=endNum; i++) {
+                let seg = document.getElementById(`seg-${i}`);
+                if(seg) {
+                    seg.classList.add('highlight');
+                    if (i === endNum) {
+                        // Add frog/marker to the end of the jump
+                        let marker = document.createElement('span');
+                        marker.className = 'frog-marker';
+                        marker.innerText = '📍'; 
+                        seg.appendChild(marker);
+                        
+                        // Scroll number line to keep active area in view
+                        seg.scrollIntoView({behavior: "smooth", inline: "center"});
+                    }
+                }
+            }
+
+            groupsCancelled++;
+            
+            // Update Text to show current count
+            eqDisplay.innerText = `${tableNum} x ${multiplier} ... that's ${groupsCancelled} groups of ${tableNum} = ${groupsCancelled * tableNum}`;
+
+            // If round finished
+            if (groupsCancelled >= multiplier) {
+                btn.innerText = `Next Round (${tableNum} x ${multiplier + 1})`;
+            }
+        }
+
+        // Initialize
+        initGame();
+
+    </script>
+</body>
+</html>
