@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dino Math: 2-Step Edition</title>
+    <title>Dino Math: 3-Step Master</title>
     <style>
         :root {
-            --primary: #673AB7; /* Deep Purple */
-            --accent: #FFEB3B; /* Yellow */
-            --highlight: #FF5722; /* Orange for circles */
+            --primary: #673AB7; 
+            --accent: #FFEB3B; 
+            --highlight: #FF5722; 
+            --success: #4CAF50;
+            --error: #F44336;
             --bg: #F3E5F5;
         }
         
@@ -22,6 +24,7 @@
             margin: 0;
             padding: 10px;
             overflow: hidden;
+            user-select: none; 
         }
 
         /* --- Header --- */
@@ -46,6 +49,29 @@
             color: var(--primary);
         }
 
+        /* --- The Quiz Input --- */
+        .quiz-input {
+            width: 80px;
+            padding: 8px;
+            font-size: 1.2rem;
+            text-align: center;
+            border: 3px solid #ccc;
+            border-radius: 8px;
+            display: none; 
+            font-weight: bold;
+            color: #333;
+        }
+        .quiz-input.visible { display: block; border-color: var(--highlight); }
+        .quiz-input.error { border-color: var(--error); color: var(--error); animation: shake 0.3s; }
+        
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+
         /* --- Main Visualization Area --- */
         .math-container {
             background: white;
@@ -63,18 +89,15 @@
             position: relative;
         }
 
-        /* --- The Group (Row) Bubbles --- */
+        /* --- Bubbles --- */
         .math-row {
             display: flex;
             align-items: center;
             margin-bottom: 10px;
             padding: 10px 20px;
             background: #fff;
-            
-            /* The Circle/Bubble Style */
             border: 3px solid var(--highlight); 
             border-radius: 50px; 
-            
             white-space: nowrap;
             transition: all 0.3s;
             box-shadow: 2px 2px 0 rgba(0,0,0,0.05);
@@ -87,63 +110,27 @@
             animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         
-        @keyframes popIn {
-            from { transform: scale(0); }
-            to { transform: scale(1); }
-        }
+        @keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
 
-        /* The math text inside the row (= 2) */
-        .row-equals {
-            font-size: 1.5rem;
-            color: #888;
-            margin-left: 20px;
-            font-weight: bold;
-            opacity: 0; /* Hidden initially */
-            transform: translateX(-10px);
-            transition: all 0.5s ease;
+        /* Step 2: Row Counts */
+        .row-equals, .plus-separator {
+            opacity: 0; 
+            transition: opacity 0.5s ease;
         }
+        .row-equals { font-size: 1.5rem; color: #888; margin-left: 20px; font-weight: bold; }
+        .plus-separator { font-size: 2rem; color: var(--primary); font-weight: bold; margin-left: 30px; line-height: 0.5; height: 20px; }
         
-        .row-equals.visible {
-            opacity: 1;
-            transform: translateX(0);
-        }
+        .visible-step-2 { opacity: 1 !important; }
 
-        /* --- The Plus Sign Between Rows --- */
-        .plus-separator {
-            font-size: 2rem;
-            color: var(--primary);
-            font-weight: bold;
-            margin-left: 30px; 
-            line-height: 0.5;
-            height: 20px;
-            opacity: 0; /* Hidden initially */
-            transition: opacity 0.5s;
+        /* Step 3: Total */
+        .total-line { 
+            border-top: 3px solid #333; width: 90%; margin-top: 15px; padding-top: 10px; 
+            font-size: 2rem; color: var(--primary); font-weight: bold; padding-left: 20px; 
+            opacity: 0; transition: opacity 0.5s ease;
         }
-        
-        .plus-separator.visible {
-            opacity: 1;
-        }
-        
-        /* --- Total Calculation --- */
-        .total-line {
-            border-top: 3px solid #333;
-            width: 90%;
-            margin-top: 15px;
-            padding-top: 10px;
-            font-size: 2rem;
-            color: var(--primary);
-            font-weight: bold;
-            text-align: left;
-            padding-left: 20px;
-            opacity: 0; /* Hidden initially */
-            transition: opacity 0.5s;
-        }
-        
-        .total-line.visible {
-            opacity: 1;
-        }
+        .visible-step-3 { opacity: 1 !important; }
 
-        /* --- Number Line (Footer) --- */
+        /* --- Footer --- */
         .footer {
             width: 100%;
             max-width: 800px;
@@ -156,96 +143,54 @@
             border-top: 4px solid var(--primary);
         }
 
-        .number-line-scroll {
-            overflow-x: auto;
-            padding-top: 50px; /* Space for flying dino */
-            padding-bottom: 20px;
-        }
+        .number-line-scroll { overflow-x: auto; padding-top: 50px; padding-bottom: 20px; }
+        .number-line { position: relative; height: 3px; background: #333; }
+        .tick { position: absolute; bottom: 0; width: 2px; height: 10px; background: #999; }
+        .tick-label { position: absolute; bottom: -25px; transform: translateX(-50%); font-size: 0.8rem; color: #666; }
+        .tick-label.highlight { color: var(--primary); font-weight: bold; font-size: 1.1rem; }
 
-        .number-line {
-            position: relative;
-            height: 3px;
-            background: #333;
-        }
-
-        .tick {
-            position: absolute;
-            bottom: 0;
-            width: 2px;
-            height: 10px;
-            background: #999;
-        }
-        
-        .tick-label {
-            position: absolute;
-            bottom: -25px;
-            transform: translateX(-50%);
-            font-size: 0.8rem;
-            color: #666;
-        }
-        
-        .tick-label.highlight {
-            color: var(--primary);
-            font-weight: bold;
-            font-size: 1.1rem;
-        }
-
-        /* --- Flying Dino --- */
         #flyingDino {
-            position: absolute;
-            top: -45px;
-            left: -10px; /* Aligned with 0 */
-            font-size: 2.5rem;
-            transition: left 1s ease-in-out;
-            z-index: 50;
+            position: absolute; top: -45px; left: -10px; font-size: 2.5rem;
+            transition: left 1s ease-in-out; z-index: 50;
         }
+        .flying { animation: flyArc 1s ease-in-out; }
+        @keyframes flyArc { 0% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-60px) rotate(-15deg); } 100% { transform: translateY(0) rotate(0deg); } }
 
-        .flying {
-            animation: flyArc 1s ease-in-out;
-        }
-
-        @keyframes flyArc {
-            0% { transform: translateY(0) rotate(0deg); }
-            50% { transform: translateY(-60px) rotate(-15deg); }
-            100% { transform: translateY(0) rotate(0deg); }
-        }
-
-        /* --- Action Button --- */
+        /* --- Button --- */
         #nextBtn {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 30px;
-            font-size: 1.3rem;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 4px 0 #4527A0;
-            transition: transform 0.1s;
+            background: var(--primary); color: white; border: none; padding: 12px 30px;
+            border-radius: 30px; font-size: 1.3rem; font-weight: bold; cursor: pointer;
+            box-shadow: 0 4px 0 #4527A0; transition: transform 0.1s;
         }
         #nextBtn:active { transform: translateY(4px); box-shadow: none; }
+        #nextBtn.info-mode { background: #03A9F4; box-shadow: 0 4px 0 #0277BD; } /* Blue for Info */
+        #nextBtn.check-mode { background: var(--success); box-shadow: 0 4px 0 #2E7D32; }
         
-        /* Secondary color for the calculation step */
-        #nextBtn.calc-mode {
-            background: var(--highlight);
-            box-shadow: 0 4px 0 #E64A19;
+        /* Volume Toggle */
+        .sound-toggle {
+            position: absolute; top: 10px; right: 10px;
+            background: none; border: none; font-size: 1.5rem; cursor: pointer;
+            opacity: 0.5;
         }
+        .sound-toggle:hover { opacity: 1; }
 
     </style>
 </head>
 <body>
 
+    <button class="sound-toggle" onclick="toggleSound()" id="soundBtn">🔊</button>
+
     <div class="header">
         <label>Times Table of:</label>
-        <select id="tableSelect" onchange="resetGame()">
-            </select>
+        <select id="tableSelect" onchange="resetGame()"></select>
+        
+        <input type="number" id="guessInput" class="quiz-input" placeholder="Sum?">
+        
         <button id="nextBtn" onclick="handleGameStep()">Start</button>
     </div>
 
     <div class="math-container" id="mathArea">
-        <div style="color: #999; font-style: italic; padding: 20px;">
-            Select a number to begin...
-        </div>
+        <div style="color: #999; padding: 20px;">Select a number to begin...</div>
     </div>
 
     <div class="footer">
@@ -257,195 +202,217 @@
     </div>
 
     <script>
-        // --- Game State ---
-        let tableNum = 4;       // The Table Number (Rows)
-        let multiplier = 0;     // The Column Count
-        let maxMultiplier = 10; 
+        // --- State ---
+        let tableNum = 4;
+        let multiplier = 0;
+        let maxMultiplier = 10;
         
-        // "phase" handles the 2-step process
-        // 'SHOW_DINO' = User clicked Next -> Show images. Math is hidden.
-        // 'SHOW_MATH' = User clicked Calculate -> Reveal math & Fly dino.
-        let phase = 'SHOW_MATH'; // Start here so first click triggers SHOW_DINO
-
-        const tickSpacing = 35; // Pixels per unit
+        // PHASES: 'START_ROUND' -> 'SHOW_COUNTS' -> 'CHECK_ANSWER'
+        let phase = 'START_ROUND'; 
+        
+        const tickSpacing = 35;
+        let soundEnabled = true;
 
         // --- DOM ---
         const mathArea = document.getElementById('mathArea');
         const numLine = document.getElementById('numberLine');
-        const flyingDino = document.getElementById('flyingDino');
         const select = document.getElementById('tableSelect');
         const btn = document.getElementById('nextBtn');
+        const guessInput = document.getElementById('guessInput');
         const scrollContainer = document.getElementById('scrollContainer');
 
-        // --- Init ---
-        // Fill dropdown 1-10
+        // Init Dropdown
         for(let i=1; i<=10; i++){
             let opt = document.createElement('option');
-            opt.value = i;
-            opt.innerText = i;
+            opt.value = i; opt.innerText = i;
             if(i===4) opt.selected = true;
             select.appendChild(opt);
         }
 
+        // Enter Key
+        guessInput.addEventListener("keypress", function(event) {
+            if (event.key === "Enter") handleGameStep();
+        });
+
+        // --- Audio ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playTone(freq, type, duration) {
+            if (!soundEnabled) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + duration);
+        }
+        function playSound(effect) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            if (effect === 'pop') playTone(600, 'sine', 0.1);
+            else if (effect === 'reveal') playTone(800, 'sine', 0.1); // Higher pitch for reveal
+            else if (effect === 'success') { playTone(523.25, 'triangle', 0.2); setTimeout(() => playTone(659.25, 'triangle', 0.4), 100); }
+            else if (effect === 'error') playTone(150, 'sawtooth', 0.3);
+        }
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('soundBtn').innerText = soundEnabled ? '🔊' : '🔇';
+        }
+
+        // --- Logic ---
         function resetGame() {
             tableNum = parseInt(select.value);
             multiplier = 0;
-            phase = 'SHOW_MATH'; // Ready to start first round
+            phase = 'START_ROUND';
             
-            // Clear Visuals
             mathArea.innerHTML = '<div style="color: #888; padding:20px;">Ready! Click Start.</div>';
-            btn.innerText = "Show Dinos (x1)";
-            btn.className = ""; 
-            btn.onclick = handleGameStep;
+            btn.innerText = "Start (x1)";
+            btn.className = "";
+            guessInput.classList.remove('visible');
             
-            // Setup Number Line (Length = Table * 10)
             drawNumberLine();
             moveDino(0, false);
         }
 
         function drawNumberLine() {
             let maxVal = tableNum * 10; 
-            let width = maxVal * tickSpacing + 100; // padding
-            numLine.style.width = width + 'px';
-            
-            // Rebuild innerHTML but keep dino logic
+            numLine.style.width = (maxVal * tickSpacing + 100) + 'px';
             numLine.innerHTML = '<div id="flyingDino">🦖</div>';
-            
-            // Draw ticks 0 to maxVal
             for(let i=0; i<=maxVal; i++) {
                 let tick = document.createElement('div');
-                tick.className = 'tick';
-                tick.style.left = (i * tickSpacing) + 'px';
-                
-                // Show label every 1 step for clarity
+                tick.className = 'tick'; tick.style.left = (i * tickSpacing) + 'px';
                 let label = document.createElement('div');
-                label.className = 'tick-label';
-                label.innerText = i;
-                label.id = `label-${i}`;
+                label.className = 'tick-label'; label.innerText = i; label.id = `label-${i}`;
                 label.style.left = (i * tickSpacing) + 'px';
-                numLine.appendChild(label);
-                
-                numLine.appendChild(tick);
+                numLine.appendChild(label); numLine.appendChild(tick);
             }
         }
 
         function handleGameStep() {
-            if(phase === 'SHOW_MATH') {
-                // STEP 1: SHOW THE IMAGES (Hidden Math)
+            
+            // --- PHASE 1: START ROUND (Show Grid) ---
+            if(phase === 'START_ROUND') {
                 if(multiplier >= maxMultiplier) {
-                    if(confirm("Done! Reset?")) resetGame();
-                    return;
+                    if(confirm("Reset?")) resetGame(); return;
                 }
-
                 multiplier++; 
-                renderGrid(false); // false = math hidden
                 
-                // Update State to wait for next click
-                phase = 'SHOW_DINO';
-                btn.innerText = "Show Sum & Fly!";
-                btn.className = "calc-mode"; // Orange button
+                // 1. Render Visuals (Images Only)
+                renderGrid(false, false); 
+                playSound('pop');
                 
-                // Scroll to bottom to see new row
+                // Update State -> Prepare to Show Counts
+                phase = 'SHOW_COUNTS';
+                btn.innerText = "Show Numbers";
+                btn.className = "info-mode"; // Blue button
+                
                 mathArea.scrollTop = mathArea.scrollHeight;
+                return;
+            }
 
-            } else {
-                // STEP 2: REVEAL MATH & FLY DINO
-                revealMath();
-                
-                // Animate Dino
-                let total = tableNum * multiplier;
-                moveDino(total, true);
-                
-                // Highlight number on line
-                document.getElementById(`label-${total}`).classList.add('highlight');
+            // --- PHASE 2: SHOW COUNTS (Scaffolding) ---
+            if(phase === 'SHOW_COUNTS') {
+                // 2. Reveal Row Counts (= 4)
+                revealCounts();
+                playSound('reveal');
 
-                // Prepare for next round
-                phase = 'SHOW_MATH';
-                if(multiplier < maxMultiplier) {
-                    btn.innerText = `Next (x${multiplier + 1})`;
+                // Show Quiz Input for Final Step
+                guessInput.value = '';
+                guessInput.classList.add('visible');
+                guessInput.focus();
+
+                // Update State -> Prepare to Check
+                phase = 'CHECK_ANSWER';
+                btn.innerText = "Check Total";
+                btn.className = "check-mode"; // Green button
+                return;
+            }
+
+            // --- PHASE 3: CHECK ANSWER (Solution) ---
+            if(phase === 'CHECK_ANSWER') {
+                let correctAnswer = tableNum * multiplier;
+                let userGuess = parseInt(guessInput.value);
+
+                if(userGuess === correctAnswer) {
+                    // Success!
+                    playSound('success');
+                    revealTotal(); // Show Total Line
+                    moveDino(correctAnswer, true); // Fly
+                    document.getElementById(`label-${correctAnswer}`).classList.add('highlight');
+                    
+                    guessInput.classList.remove('visible');
+                    
+                    // Reset Logic for Next Round
+                    phase = 'START_ROUND';
+                    if(multiplier < maxMultiplier) {
+                        btn.innerText = `Next (x${multiplier + 1})`;
+                    } else {
+                        btn.innerText = "Finish";
+                    }
+                    btn.className = "";
                 } else {
-                    btn.innerText = "Finish";
+                    // Fail
+                    playSound('error');
+                    guessInput.classList.add('error');
+                    setTimeout(() => guessInput.classList.remove('error'), 300);
                 }
-                btn.className = ""; // Back to purple
             }
         }
 
-        function renderGrid(showMath) {
+        function renderGrid() {
             mathArea.innerHTML = ''; 
-
-            // Loop Rows (Table Number)
             for(let r = 0; r < tableNum; r++) {
-                
-                // 1. The Row Bubble
                 let rowDiv = document.createElement('div');
                 rowDiv.className = 'math-row';
-                
-                // Add Dinos (Columns)
                 for(let c = 0; c < multiplier; c++) {
                     let dino = document.createElement('span');
-                    dino.className = 'dino-icon';
-                    dino.innerText = '🦖';
+                    dino.className = 'dino-icon'; dino.innerText = '🦖';
                     rowDiv.appendChild(dino);
                 }
-                
-                // Add "= Count" (Initially hidden if !showMath)
+                // Step 2 Element (Hidden initially)
                 let equals = document.createElement('span');
-                equals.className = 'row-equals ' + (showMath ? 'visible' : '');
+                equals.className = 'row-equals';
                 equals.innerText = `= ${multiplier}`;
                 rowDiv.appendChild(equals);
-                
                 mathArea.appendChild(rowDiv);
 
-                // 2. The Plus Sign (Between rows)
                 if(r < tableNum - 1) {
                     let plusDiv = document.createElement('div');
-                    plusDiv.className = 'plus-separator ' + (showMath ? 'visible' : '');
-                    plusDiv.innerText = '+';
-                    mathArea.appendChild(plusDiv);
+                    plusDiv.className = 'plus-separator';
+                    plusDiv.innerText = '+'; mathArea.appendChild(plusDiv);
                 }
             }
-
-            // 3. The Grand Total (Initially hidden)
+            // Step 3 Element (Hidden initially)
             let totalDiv = document.createElement('div');
-            totalDiv.className = 'total-line ' + (showMath ? 'visible' : '');
+            totalDiv.className = 'total-line';
             totalDiv.innerText = `Total: ${tableNum * multiplier}`;
             mathArea.appendChild(totalDiv);
-            
-            // Auto scroll
             mathArea.scrollTop = mathArea.scrollHeight;
         }
 
-        function revealMath() {
-            // Find all hidden elements and add 'visible' class
-            document.querySelectorAll('.row-equals').forEach(el => el.classList.add('visible'));
-            document.querySelectorAll('.plus-separator').forEach(el => el.classList.add('visible'));
-            document.querySelectorAll('.total-line').forEach(el => el.classList.add('visible'));
+        function revealCounts() {
+            // Adds class to reveal Step 2 elements
+            document.querySelectorAll('.row-equals').forEach(el => el.classList.add('visible-step-2'));
+            document.querySelectorAll('.plus-separator').forEach(el => el.classList.add('visible-step-2'));
+        }
+
+        function revealTotal() {
+            // Adds class to reveal Step 3 elements
+            document.querySelectorAll('.total-line').forEach(el => el.classList.add('visible-step-3'));
         }
 
         function moveDino(targetVal, animate) {
             const d = document.getElementById('flyingDino');
             let px = targetVal * tickSpacing;
-            
             d.style.left = (px - 15) + 'px'; 
-            
             if(animate) {
-                d.classList.remove('flying');
-                void d.offsetWidth; 
-                d.classList.add('flying');
+                d.classList.remove('flying'); void d.offsetWidth; d.classList.add('flying');
             }
-            
-            // Scroll container
             let containerCenter = scrollContainer.clientWidth / 2;
-            let targetScroll = px - containerCenter;
-            scrollContainer.scrollTo({
-                left: targetScroll,
-                behavior: 'smooth'
-            });
+            scrollContainer.scrollTo({ left: px - containerCenter, behavior: 'smooth' });
         }
 
-        // Init
         window.onload = resetGame;
-
     </script>
 </body>
 </html>
